@@ -1,0 +1,47 @@
+(ns projectname.db
+  (:require [honey.sql :as sql]
+            [integrant.core :as ig]
+            [projectname.migrations :as migrations]
+            [sqlite.core :as sqlite]))
+
+;; The database component: a sqlite connection with the schema migrated up
+;; to date on start. Every query below is HoneySQL data formatted into the
+;; [sql & params] vector sqlite.core runs directly.
+
+(defmethod ig/init-key ::conn [_ {:keys [path]}]
+  (let [conn (sqlite/open path)]
+    (try
+      (migrations/migrate! conn)
+      conn
+      (catch e
+        ;; Don't leak the file handle when a migration fails.
+             (sqlite/close! conn)
+        (throw e)))))
+
+(defmethod ig/halt-key! ::conn [_ conn]
+  (sqlite/close! conn))
+
+(def ^:private greeting-columns [:id :name])
+
+(defn list-greetings
+  "The ten most recent greetings, newest first."
+  [conn]
+  (sqlite/query conn (sql/format {:select greeting-columns
+                                  :from [:greetings]
+                                  :order-by [[:id :desc]]
+                                  :limit 10})))
+
+(defn add-greeting!
+  "Insert a greeting for `name` and return the new row."
+  [conn name]
+  ;; sqlite supports RETURNING, and the sql layer notices the clause and
+  ;; reads the row back instead of an update count.
+  (sqlite/execute-one! conn (sql/format {:insert-into :greetings
+                                         :values [{:name name}]
+                                         :returning greeting-columns})))
+
+(defn clear-greetings!
+  "Delete every greeting. Returns how many were deleted."
+  [conn]
+  (:sql/update-count
+    (sqlite/execute-one! conn (sql/format {:delete-from :greetings}))))

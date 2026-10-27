@@ -1,4 +1,16 @@
 ;; clj-kondo config for let-go (.lg) sources.
+;;
+;; let-go's catch takes no exception class: (catch binding & body).
+;; clj-kondo parses the binding symbol as a class name (-> unresolved
+;; symbol) and the first body form as the binding (-> unsupported
+;; binding form), and never analyzes the catch body. The settings
+;; below silence exactly that fallout.
 {:linters
- {;; let-go builtin namespaces, available without a require.
+ {;; First catch body form lands in kondo's binding position, reported
+  ;; as a :syntax error. Cost of :off: kondo also stops reporting
+  ;; unbalanced parens - cljfmt and the compiler still catch those.
+  :syntax {:level :off}
+  ;; Catch binding symbols, parsed as class names.
+  :unresolved-symbol {:exclude [e _]}
+  ;; let-go builtin namespaces, available without a require.
   :unresolved-namespace {:exclude [os io]}}}

@@ -218,13 +218,13 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 **Files:**
 - Create: `.mise.toml`, `lgx.edn`, `.gitignore` (replace the empty one), `.gitattributes`, `.cljfmt.edn`, `.clj-kondo/config.edn`, `LICENSE`, `VERSION`
 
-- [ ] **Step 1: Copy the sibling files.** Clone the web template (`gh repo clone abogoyavlensky/lgx-template-web /tmp/tplweb/web -- --depth 1` if `/tmp/tplweb/web` is missing). Copy `.cljfmt.edn`, `.clj-kondo/config.edn`, `.gitattributes` and `LICENSE` unchanged. Write `VERSION` containing `0.1.0`.
+- [x] **Step 1: Copy the sibling files.** Clone the web template (`gh repo clone abogoyavlensky/lgx-template-web /tmp/tplweb/web -- --depth 1` if `/tmp/tplweb/web` is missing). Copy `.cljfmt.edn`, `.clj-kondo/config.edn`, `.gitattributes` and `LICENSE` unchanged. Write `VERSION` containing `0.1.0`.
 
-- [ ] **Step 2: `.mise.toml`.** Use the web template's layout and comment about why `lg` is absent. Tools: `go = "1.27"`, `node = "24"`, `lgx = "0.5.3"`, and `cljfmt` and `clj-kondo` at the web template's pins, with the same `[tool_alias]` entries.
+- [x] **Step 2: `.mise.toml`.** Use the web template's layout and comment about why `lg` is absent. Tools: `go = "1.27"`, `node = "24"`, `lgx = "0.5.3"`, and `cljfmt` and `clj-kondo` at the web template's pins, with the same `[tool_alias]` entries.
 
-- [ ] **Step 3: `.gitignore`.** Merge the web template's list with Quel's: `bin/`, `dist/`, `resources/public/`, `frontend/node_modules/`, `*.db`, `*.lgb`, `.nrepl-port`, `.nrepl-history`, `.tmp/`, `.DS_Store`, `.idea/`, `.lsp/`, `.vscode`, `.calva`, `.clj-kondo/.cache/`, `.env`.
+- [x] **Step 3: `.gitignore`.** Merge the web template's list with Quel's: `bin/`, `dist/`, `resources/public/`, `frontend/node_modules/`, `*.db`, `*.lgb`, `.nrepl-port`, `.nrepl-history`, `.tmp/`, `.DS_Store`, `.idea/`, `.lsp/`, `.vscode`, `.calva`, `.clj-kondo/.cache/`, `.env`.
 
-- [ ] **Step 4: `lgx.edn`.** Keep Quel's comment style: one short comment per non-obvious entry.
+- [x] **Step 4: `lgx.edn`.** Keep Quel's comment style: one short comment per non-obvious entry.
   - `:paths ["src"]`, `:resource-paths ["resources"]`, `:main "src/projectname/app.lg"` (with the comment on why it isn't `main`).
   - `:lg-runtime :built`, `:lg-version "18df3ad5c033cbf8f214c7d2a09e97f78a642510"` with the comment: a let-go `main` commit, because the native build needs `lg compile -module` / `-import`, newer than 1.13.0; bump to the first release that has them.
   - `:targets {:bin {:target :native :out "bin/projectname" :go/build-tags ["production"]}}`, with Quel's comment on native and production.
@@ -259,11 +259,11 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 
     With Task 0, every step kind streams, so `lgx dev`, `lgx fe-watch` and `lgx package-macos` show live output.
 
-- [ ] **Step 5: Validate.**
+- [x] **Step 5: Validate.**
   Run: `mise trust && mise install && lgx --version && lgx info`
   Expected: `lgx 0.5.3`, and the tasks listed with no config validation errors. (`lgx info` may start building the runtime, which can take minutes the first time.)
 
-- [ ] **Step 6: Commit.** `git add -A && git commit -m "Project config: lgx.edn, mise, formatter and linter"`
+- [x] **Step 6: Commit.** `git add -A && git commit -m "Project config: lgx.edn, mise, formatter and linter"`
 
 ### Task 2: Database and migrations
 
