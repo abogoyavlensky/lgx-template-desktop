@@ -267,30 +267,32 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 
 ### Task 2: Database and migrations
 
+> Deviation: `.clj-kondo/config.edn` is extended beyond the web template's (`:syntax` off, `e`/`_` excluded from `:unresolved-symbol`), copied from lgx's own config, because let-go's class-less `(catch e …)` in `db.lg` otherwise fails the lint. It also lists `io`, as the web template does.
+
 **Files:**
 - Create: `src/projectname/migrations.lg`, `src/projectname/db.lg`
 - Test: `test/projectname/db_test.lg`
 
-- [ ] **Step 1: Write `migrations.lg`.** Copy the web template's `src/projectname/migrations.lg` (`migrations`, `migrate!`, `rollback!`). The single migration is `001-create-greetings`: `id integer primary key`, `name text not null`.
+- [x] **Step 1: Write `migrations.lg`.** Copy the web template's `src/projectname/migrations.lg` (`migrations`, `migrate!`, `rollback!`). The single migration is `001-create-greetings`: `id integer primary key`, `name text not null`.
 
-- [ ] **Step 2: Write the failing tests** in `db_test.lg`, modelled on wails-tasks' `test/tasks/db_test.lg`:
+- [x] **Step 2: Write the failing tests** in `db_test.lg`, modelled on wails-tasks' `test/tasks/db_test.lg`:
   - a public `with-conn` helper that opens a temp sqlite file, migrates it and deletes it afterwards;
   - add, then list, returns the row with `:id` and `:name`;
   - the list is newest first and capped at 10;
   - `clear-greetings!` deletes everything and returns the count;
   - `rollback!` then `migrate!` works, so the migration's down step is valid.
 
-- [ ] **Step 3: Run them to see them fail.**
+- [x] **Step 3: Run them to see them fail.**
   Run: `CGO_ENABLED=0 GOFLAGS=-tags=server lgx test`
   Expected: FAIL (`projectname.db` is missing).
 
-- [ ] **Step 4: Write `db.lg`.** Base it on the web template's `db.lg`: the `::conn` init-key, which opens, migrates, and closes the connection again if migration throws (wails-tasks' version); the `::conn` halt-key, which closes; `list-greetings`; `add-greeting!`, which uses `RETURNING`. Add `clear-greetings!`, which returns `:sql/update-count`.
+- [x] **Step 4: Write `db.lg`.** Base it on the web template's `db.lg`: the `::conn` init-key, which opens, migrates, and closes the connection again if migration throws (wails-tasks' version); the `::conn` halt-key, which closes; `list-greetings`; `add-greeting!`, which uses `RETURNING`. Add `clear-greetings!`, which returns `:sql/update-count`.
 
-- [ ] **Step 5: Run the tests.**
+- [x] **Step 5: Run the tests.**
   Run: `CGO_ENABLED=0 GOFLAGS=-tags=server lgx test`
   Expected: PASS.
 
-- [ ] **Step 6: Commit.** `git add -A && git commit -m "Greetings table and queries over sqlite"`
+- [x] **Step 6: Commit.** `git add -A && git commit -m "Greetings table and queries over sqlite"`
 
 ### Task 3: API handlers
 

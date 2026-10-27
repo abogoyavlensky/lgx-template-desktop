@@ -1,0 +1,37 @@
+(ns projectname.api
+  (:require [integrant.core :as ig]
+            [projectname.db :as db]
+            [string :as str]
+            [wails.core :as w]))
+
+;; What the frontend calls, one fn per call. Each takes the connection
+;; first, then the plain values JavaScript sends; the handlers component
+;; below supplies the connection.
+
+(defn- name! [s]
+  (let [n (str/trim (str s))]
+    (when (str/blank? n)
+      (throw (ex-info "A greeting needs a name." {})))
+    n))
+
+(defn list-greetings [conn] (db/list-greetings conn))
+
+(defn add-greeting [conn name] (db/add-greeting! conn (name! name)))
+
+(defn clear-greetings [conn] (db/clear-greetings! conn))
+
+;; By var, not by fn value: a var reads its current definition on every
+;; call, so redefining any of these from the nREPL changes what the next
+;; frontend call runs, with no restart and no re-registration.
+(def handlers
+  {"list-greetings" #'list-greetings
+   "add-greeting" #'add-greeting
+   "clear-greetings" #'clear-greetings})
+
+;; Registers every handler over the connection. (partial #'f db) keeps the
+;; var, so it stays hot. Wails has no way to unregister; a halted system
+;; leaves the handlers in place, and the process ends right after anyway.
+(defmethod ig/init-key ::handlers [_ {:keys [db]}]
+  (doseq [[name v] handlers]
+    (w/handler! name (partial v db)))
+  (set (keys handlers)))
