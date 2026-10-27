@@ -37,8 +37,13 @@ require_apple_silicon() {
         die "needs an Apple Silicon Mac (this is $(uname -s) $(uname -m))"
 }
 
-# Escape a value for the replacement side of a sed s/// command.
-sed_escape() { printf '%s' "$1" | sed -e 's/[\/&]/\\&/g'; }
+# A value as it goes into Info.plist: XML-escaped, then escaped for the
+# replacement side of a sed s/// command.
+plist_value() {
+    printf '%s' "$1" |
+        sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' |
+        sed -e 's/[\/&]/\\&/g'
+}
 
 require_apple_silicon
 version="$(read_version)"
@@ -81,9 +86,9 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 # bin/projectname is :out in lgx.edn.
 cp bin/projectname "$APP/Contents/MacOS/$EXECUTABLE"
 cp "$DIST/$EXECUTABLE.icns" "$APP/Contents/Resources/$EXECUTABLE.icns"
-sed -e "s/@APP_NAME@/$(sed_escape "$APP_NAME")/g" \
-    -e "s/@BUNDLE_ID@/$(sed_escape "$BUNDLE_ID")/g" \
-    -e "s/@EXECUTABLE@/$(sed_escape "$EXECUTABLE")/g" \
+sed -e "s/@APP_NAME@/$(plist_value "$APP_NAME")/g" \
+    -e "s/@BUNDLE_ID@/$(plist_value "$BUNDLE_ID")/g" \
+    -e "s/@EXECUTABLE@/$(plist_value "$EXECUTABLE")/g" \
     -e "s/@VERSION@/$version/g" \
     -e "s/@MACOS_MIN@/$MACOS_MIN/g" \
     build/macos/Info.plist >"$APP/Contents/Info.plist"

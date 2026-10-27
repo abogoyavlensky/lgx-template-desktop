@@ -424,7 +424,7 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 
 > Result: `bash -n` and `shellcheck` pass on both scripts; the plist renders with no placeholders left and `plistlib` accepts it. `package-macos` was **not run end to end: it needs a Mac**.
 > Note: on this Linux box, plain `lgx package-macos` fails earlier than the script: lgx first builds the cgo runtime, which needs GTK headers. With `CGO_ENABLED=0 GOFLAGS=-tags=server` it stops at once with "needs an Apple Silicon Mac" and `exit=1`.
-> Deviation: the script escapes `/` and `&` in the values it substitutes into the plist (`sed_escape`), so an app name like "A/B" doesn't break the `sed`.
+> Deviation: the script XML-escapes and then sed-escapes the values it substitutes into the plist (`plist_value`), so an app name like "A/B" or "R & D" renders a valid plist (codex review finding).
 
 **Files:**
 - Create: `build/macos/Info.plist`, `build/macos/icon.png`, `scripts/package-macos.sh`
