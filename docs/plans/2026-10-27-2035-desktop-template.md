@@ -396,17 +396,20 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 
 ### Task 6: Dev script
 
+> Result: verified in server mode on Linux. Vite's banner streams live; the page is served through Vite (`/@vite/client`); killing the app (SIGTERM) ends `lgx dev`, stops Vite and removes `.nrepl-port`; SIGINT to `lgx dev`'s process group (what a terminal Ctrl+C does) leaves no `vite` or app process. Driven from Python with `os.killpg`, since the harness's bash ignores SIGINT for background jobs.
+> Deviation: `cleanup` in `scripts/dev.sh` also runs `rm -f .nrepl-port`. On Ctrl+C the app is stopped without its shutdown hook (apparently the `lgx` wrapper takes `lg` down on SIGTERM), which left a stale `.nrepl-port` pointing at a dead port. Quel's script has the same gap.
+
 **Files:**
 - Create: `scripts/dev.sh`
 
-- [ ] **Step 1: Write `scripts/dev.sh`** from Quel's `scripts/dev.sh`:
+- [x] **Step 1: Write `scripts/dev.sh`** from Quel's `scripts/dev.sh`:
   - replace the `fe-install` line with `"$LGX" fe-deps`;
   - start the app with `"$LGX" lgx:run`, adding a comment that the `run` task's frontend build isn't needed under Vite;
   - keep the process-group handling, the port-in-use check and the wait-for-Vite loop.
 
   Make it executable.
 
-- [ ] **Step 2: Check it in server mode, both ways it can stop.**
+- [x] **Step 2: Check it in server mode, both ways it can stop.**
   1. Start `CGO_ENABLED=0 GOFLAGS=-tags=server WAILS_SERVER_PORT=8765 lgx dev` in the background, with output to a log.
   2. While it runs, the log already shows Vite's banner (streaming, from Task 0).
   3. Once it answers, `curl -fs http://localhost:8765/ | grep -q '/@vite/client'` succeeds and `.nrepl-port` exists.
@@ -415,7 +418,7 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 
   Expected: all of the above hold. If item 5 can't be driven from this harness, record it as a manual check rather than claiming it.
 
-- [ ] **Step 3: Commit.** `git add -A && git commit -m "lgx dev: the app with Vite's dev server"`
+- [x] **Step 3: Commit.** `git add -A && git commit -m "lgx dev: the app with Vite's dev server"`
 
 ### Task 7: macOS packaging
 
