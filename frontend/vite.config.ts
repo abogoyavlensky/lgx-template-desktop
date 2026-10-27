@@ -14,12 +14,16 @@ export default defineConfig({
   },
   base: "/",
   server: {
+    // IPv4 on purpose. Wails dials the dev server on 127.0.0.1; with the
+    // default host, Vite can listen on IPv6 only (macOS resolves localhost
+    // to ::1 first), and the window stays blank with "connection refused".
+    host: "127.0.0.1",
     port: 5173,
     strictPort: true,
     // The HMR websocket goes straight to Vite. The page's own origin is
     // Wails' (wails://localhost:5173 on macOS, http://localhost:<port> in
     // server mode), and in server mode nothing there answers a websocket.
-    ws: { protocol: "ws", host: "localhost", clientPort: 5173 },
+    ws: { protocol: "ws", host: "127.0.0.1", clientPort: 5173 },
   },
   build: {
     outDir: "../resources/public",
