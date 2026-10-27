@@ -1,0 +1,31 @@
+(ns projectname.menu-test
+  (:require [clojure.test :refer [deftest is]]
+            [projectname.menu :as menu]
+            [wails.core :as w]))
+
+;; check-menu builds the spec with Wails, which needs the application to
+;; exist; nothing is run or shown.
+(defonce ^:private app (delay (w/new-app {:name "projectname-test"})))
+
+(defn- on-clicks [items]
+  (mapcat (fn [item]
+            (concat (when (contains? item :on-click) [(:on-click item)])
+                    (on-clicks (:items item))))
+          items))
+
+(def ^:private env {:app :the-app})
+
+(deftest the-spec-is-data
+  (is (vector? (menu/spec env))))
+
+;; A click runs the current clear-greetings! with the menu's env, so a
+;; redefinition reaches it with no rebuild.
+(deftest the-click-is-hot
+  (let [clicks (on-clicks (menu/spec env))]
+    (is (= 1 (count clicks)))
+    (with-redefs [menu/clear-greetings! (fn [e] [:clear e])]
+      (is (= [[:clear env]] (mapv #(%) clicks))))))
+
+(deftest wails-accepts-the-spec
+  @app
+  (is (true? (w/check-menu (menu/spec env)))))

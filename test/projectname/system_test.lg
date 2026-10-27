@@ -1,0 +1,76 @@
+(ns projectname.system-test
+  (:require [clojure.test :refer [deftest is]]
+            [integrant.core :as ig]
+            [projectname.db :as db]
+            [projectname.system :as system]))
+
+;; The wiring, without a window: integrant starts only the keys asked for
+;; and what they depend on, so the database and the handlers come up on
+;; their own. DB_PATH points the config at a throwaway file, so the tests
+;; never touch the real database or its directory.
+
+(defn- with-config [f]
+  (let [path (str "/tmp/projectname-test-" (rand-int 100000000) ".db")
+        saved (os/getenv "DB_PATH")]
+    (try
+      (os/setenv "DB_PATH" path)
+      (f (system/config) path)
+      (finally
+        (os/setenv "DB_PATH" saved)
+        (os/sh "rm" "-f" path)))))
+
+(deftest the-config-names-every-component
+  (with-config
+    (fn [config _]
+      (is (= #{:projectname.db/conn :projectname.api/handlers
+               :projectname.shell/app :projectname.shell/window
+               :projectname.menu/menu :projectname.dev/loop}
+             (set (keys config)))))))
+
+(deftest the-components-hang-off-the-right-refs
+  (with-config
+    (fn [c _]
+      (is (= (ig/ref :projectname.db/conn)
+             (get-in c [:projectname.api/handlers :db])))
+      (is (= (ig/ref :projectname.shell/app)
+             (get-in c [:projectname.shell/window :app])))
+      (is (= (ig/ref :projectname.shell/app)
+             (get-in c [:projectname.menu/menu :app])))
+      (is (= (ig/ref :projectname.shell/window)
+             (get-in c [:projectname.dev/loop :window]))))))
+
+(deftest db-path-overrides-the-default
+  (with-config
+    (fn [c path]
+      (is (= path (get-in c [:projectname.db/conn :path]))))))
+
+(deftest stop-with-nothing-running-returns
+  (is (nil? (system/stop!))))
+
+;; Throwaway keys for a start that fails partway.
+(def ^:private halted (atom []))
+(defmethod ig/init-key ::fine [k _] k)
+(defmethod ig/halt-key! ::fine [k _] (swap! halted conj k))
+(defmethod ig/init-key ::broken [_ _] (throw (ex-info "broken on purpose" {})))
+
+(deftest a-failed-start-halts-what-it-built
+  (reset! halted [])
+  (let [e (try (system/start! {::fine {}
+                               ::broken {:after (ig/ref ::fine)}})
+               nil
+               (catch e e))]
+    (is (= "broken on purpose" (ex-message (ex-cause e))))
+    (is (= [::fine] @halted))
+    ;; Nothing is left running, so the next start is allowed.
+    (is (nil? (system/stop!)))))
+
+(deftest the-handlers-start-over-a-migrated-db
+  (with-config
+    (fn [config _]
+      (let [sys (ig/init config [:projectname.api/handlers])]
+        (try
+          (is (= #{:projectname.db/conn :projectname.api/handlers}
+                 (set (keys sys))))
+          (is (contains? (:projectname.api/handlers sys) "add-greeting"))
+          (is (= [] (db/list-greetings (:projectname.db/conn sys))))
+          (finally (ig/halt! sys)))))))

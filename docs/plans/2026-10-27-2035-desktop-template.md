@@ -300,19 +300,19 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 - Create: `src/projectname/api.lg`
 - Test: `test/projectname/api_test.lg`
 
-- [ ] **Step 1: Write the failing tests** (pattern: wails-tasks `test/tasks/api_test.lg`, reusing `with-conn` from `db_test`):
+- [x] **Step 1: Write the failing tests** (pattern: wails-tasks `test/tasks/api_test.lg`, reusing `with-conn` from `db_test`):
   - `add-greeting` trims the name;
   - a blank name throws a message containing "name";
   - `clear-greetings` returns the count and empties the list;
   - every value in `api/handlers` is a var, and the keys are exactly `#{"list-greetings" "add-greeting" "clear-greetings"}`.
 
-- [ ] **Step 2: Run them to see them fail.** Run: `CGO_ENABLED=0 GOFLAGS=-tags=server lgx test`. Expected: FAIL.
+- [x] **Step 2: Run them to see them fail.** Run: `CGO_ENABLED=0 GOFLAGS=-tags=server lgx test`. Expected: FAIL.
 
-- [ ] **Step 3: Write `api.lg`.** Follow the design's API shape. Keep wails-tasks' comments on why handlers are registered by var.
+- [x] **Step 3: Write `api.lg`.** Follow the design's API shape. Keep wails-tasks' comments on why handlers are registered by var.
 
-- [ ] **Step 4: Run the tests.** Same command. Expected: PASS.
+- [x] **Step 4: Run the tests.** Same command. Expected: PASS.
 
-- [ ] **Step 5: Commit.** `git add -A && git commit -m "Frontend handlers, registered by var"`
+- [x] **Step 5: Commit.** `git add -A && git commit -m "Frontend handlers, registered by var"`
 
 ### Task 4: Shell, menu, dev loop, system and entry point
 

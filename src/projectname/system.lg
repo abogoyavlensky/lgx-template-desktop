@@ -1,0 +1,84 @@
+(ns projectname.system
+  (:require [integrant.core :as ig]
+            [projectname.api]
+            [projectname.db]
+            [projectname.dev]
+            [projectname.menu]
+            [projectname.shell]
+            [string :as str]
+            [wails.core :as w]))
+
+;; One config map describes the app; integrant starts the components in
+;; dependency order and halts them in reverse when the app ends.
+;;
+;; The running system is the one piece of live state, kept in a defonce
+;; so reloading this namespace from the nREPL keeps it:
+;;
+;;   (keys @projectname.system/system*)
+
+(defonce system* (atom nil))
+
+;; Delivered once the last started system has halted. Starts delivered, so
+;; stop! with nothing running returns at once.
+(defonce ^:private halted* (atom (doto (promise) (deliver true))))
+
+(declare stop!)
+
+(defn db-path
+  "The sqlite file: DB_PATH when set, else projectname.db in the app's data
+   directory (which w/data-dir creates). os/getenv returns \"\" for an unset
+   variable, so the check is for a blank one."
+  []
+  (let [p (os/getenv "DB_PATH")]
+    (if (str/blank? p)
+      (str (w/data-dir "projectname") "/projectname.db")
+      p)))
+
+(defn config []
+  {:projectname.db/conn {:path (db-path)}
+   :projectname.api/handlers {:db (ig/ref :projectname.db/conn)}
+   ;; :name and the window :title are the display name; change them to your
+   ;; app's (e.g. "My App").
+   :projectname.shell/app {:name "projectname"
+                           :description "A let-go desktop app"
+                           :assets "public"
+                           :quit-on-last-window-closed true
+                           :on-shutdown (fn [] (stop!))}
+   :projectname.shell/window {:app (ig/ref :projectname.shell/app)
+                              :title "projectname"
+                              :width 900
+                              :height 640
+                              :min-width 480
+                              :min-height 400}
+   :projectname.menu/menu {:app (ig/ref :projectname.shell/app)}
+   :projectname.dev/loop {:window (ig/ref :projectname.shell/window)}})
+
+(defn start!
+  "Start the system and return it. Throws if one is already running."
+  ([] (start! (config)))
+  ([config]
+   (when @system*
+     (throw (ex-info "The system is already running." {})))
+   (reset! halted* (promise))
+   (try
+     (reset! system* (ig/init config))
+     (catch e
+       ;; A key that fails to init leaves the ones before it running (the
+       ;; nREPL, open handles): halt them before passing the error on.
+            (when-let [built (:system (ex-data e))]
+              (ig/halt! built))
+       (deliver @halted* true)
+       (throw e)))))
+
+(defn stop!
+  "Halt the running system, and return once it has halted. The two places
+   that call it at exit (projectname.app and the app's :on-shutdown) can
+   race: one halts, the other waits for it, so the process cannot end
+   mid-halt."
+  []
+  (let [halted @halted*
+        [system _] (swap-vals! system* (constantly nil))]
+    (if system
+      (try (ig/halt! system) (finally (deliver halted true)))
+      (deref halted 10000 nil))
+    nil))
