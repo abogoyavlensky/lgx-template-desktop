@@ -35,11 +35,15 @@ npm --prefix frontend run dev &
 vite_pid=$!
 set +m
 cleanup() {
-    if [[ -n "$app_pid" ]]; then kill -- -"$app_pid" 2>/dev/null || true; fi
+    if [[ -n "$app_pid" ]]; then
+        kill -- -"$app_pid" 2>/dev/null || true
+        # The app is stopped without its shutdown hook, which is what
+        # removes this file, so an editor would find a dead port in it.
+        # Only if this script started the app: the file may be another
+        # instance's.
+        rm -f .nrepl-port
+    fi
     kill -- -"$vite_pid" 2>/dev/null || true
-    # The app is stopped without its shutdown hook, which is what removes
-    # this file, so an editor would find a dead port in it.
-    rm -f .nrepl-port
 }
 trap cleanup EXIT
 trap 'exit 130' INT TERM
