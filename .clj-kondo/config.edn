@@ -1,0 +1,4 @@
+;; clj-kondo config for let-go (.lg) sources.
+{:linters
+ {;; let-go builtin namespaces, available without a require.
+  :unresolved-namespace {:exclude [os io]}}}

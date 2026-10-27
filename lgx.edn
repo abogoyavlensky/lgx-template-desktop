@@ -1,0 +1,106 @@
+{:paths ["src"]
+ ;; resources/public is the frontend, built by Vite from frontend/ (lgx
+ ;; fe-build). `lgx run` serves it from disk (edits show on reload); `lgx
+ ;; build` embeds it in the binary.
+ :resource-paths ["resources"]
+ ;; The entry namespace is projectname.app, not main: `lg compile` (the native
+ ;; build) rejects a namespace whose last segment is main.
+ :main "src/projectname/app.lg"
+
+ ;; Wails and the sqlite driver are Go packages, so the app runs on an lg that
+ ;; lgx builds with the Go toolchain.
+ :lg-runtime :built
+ ;; A let-go main commit: the native build needs `lg compile -module` and
+ ;; `-import`, which are newer than 1.13.0. Bump this to the first let-go
+ ;; release that has them.
+ :lg-version "18df3ad5c033cbf8f214c7d2a09e97f78a642510"
+
+ ;; `lgx build` compiles the app to Go (`:target :native`) instead of
+ ;; appending bytecode to an lg binary, so the binary can be codesigned; the
+ ;; frontend in resources/ is embedded through go:embed. `production` drops
+ ;; Wails' devtools and dev asset server from the shipped binary. It applies
+ ;; to `lgx build` only; `lgx run` keeps the dev build.
+ :targets {:bin {:target :native :out "bin/projectname" :go/build-tags ["production"]}}
+
+ :deps {;; The desktop shell: a Wails v3 window whose handlers are let-go fns.
+        ;; wails-v0.3.0 is the first that serves the frontend from a dev
+        ;; server (FRONTEND_DEVSERVER_URL), for HMR under `lgx dev`.
+        abogoyavlensky/letgo-wails
+        {:git/url "https://github.com/abogoyavlensky/letgo-packages"
+         :git/tag "wails-v0.3.0"
+         :deps/root "wails"}
+
+        ;; An nREPL inside the running app, started only under `lgx run`.
+        abogoyavlensky/letgo-nrepl
+        {:git/url "https://github.com/abogoyavlensky/letgo-packages"
+         :git/tag "nrepl-v0.1.0"
+         :deps/root "nrepl"}
+
+        ;; SQLite over Go's database/sql; brings the sql layer and the
+        ;; modernc.org/sqlite driver in transitively.
+        abogoyavlensky/letgo-sqlite
+        {:git/url "https://github.com/abogoyavlensky/letgo-packages"
+         :git/tag "sqlite-v0.3.0"
+         :deps/root "sqlite"}
+
+        ;; Migrations: a ragtime DataStore and Migration over the sql layer.
+        abogoyavlensky/letgo-ragtime
+        {:git/url "https://github.com/abogoyavlensky/letgo-packages"
+         :git/tag "ragtime-v0.3.0"
+         :deps/root "ragtime"}
+
+        ;; SQL as data: (sql/format {...}) -> [sql & params].
+        com.github.seancorfield/honeysql
+        {:git/url "https://github.com/seancorfield/honeysql"
+         :git/tag "v2.7.1479"}
+
+        ;; integrant wires the db, the handlers, the window, the menu and the
+        ;; dev loop together. It depends on weavejester/dependency; lgx does
+        ;; not read a plain Clojure lib's deps.edn transitively yet, so both
+        ;; are listed.
+        dev.weavejester/dependency
+        {:git/url "https://github.com/weavejester/dependency"
+         :git/tag "1.0.1"}
+        dev.weavejester/integrant
+        {:git/url "https://github.com/weavejester/integrant"
+         :git/tag "1.0.1"}}
+
+ :tasks
+ {fe-deps {:doc "Install the frontend's npm packages if they are missing"
+           :do {:sh "test -d frontend/node_modules || npm --prefix frontend ci"}}
+  fe-build {:doc "Build the frontend into resources/public"
+            :do [{:task fe-deps}
+                 {:sh "npm --prefix frontend run build"}]}
+  fe-watch {:doc "Rebuild the frontend on every change (the window reloads under lgx run)"
+            :do [{:task fe-deps}
+                 {:sh "npm --prefix frontend run watch"}]}
+  dev {:doc "Run the app with the frontend from Vite's dev server (HMR)"
+       :do {:sh "bash scripts/dev.sh"}}
+  ;; Overrides the built-in `run`: resources/public is build output, so a
+  ;; fresh project has to build the frontend first.
+  run {:doc "Build the frontend, then run the app (nREPL inside)"
+       :do [{:task fe-build}
+            {:task [lgx:run :args/rest]}]}
+  ;; Overrides the built-in `build` for the same reason.
+  build {:doc "Build the frontend, then the native binary"
+         :do [{:task fe-build}
+              {:task lgx:build}]}
+  package-macos {:doc "Build dist/projectname.app (unsigned) on an Apple Silicon Mac"
+                 :do {:sh "bash scripts/package-macos.sh"}}
+
+  fmt {:doc "Format source files (available actions: fix, check; default: fix)"
+       :args [{:name :action
+               :type [:enum "fix" "check"]
+               :default "fix"}]
+       :do [{:sh "cljfmt {{action}}"}]}
+
+  lint {:doc "Lint the backend (clj-kondo) and the frontend (oxlint)"
+        :do [{:sh "find src test -type f -name '*.lg' -print0 | xargs -0 clj-kondo --lint"}
+             {:task fe-deps}
+             {:sh "npm --prefix frontend run lint"}]}
+
+  check {:doc "Run all checks"
+         :do [{:sh "lgx fmt check"}
+              {:sh "lgx lint"}
+              {:task fe-build}
+              {:sh "lgx test"}]}}}
