@@ -521,19 +521,19 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 **Files:**
 - Modify: this plan (record results), then delete `docs/`
 
-- [ ] **Step 1: Scaffold from the committed template.**
+- [x] **Step 1: Scaffold from the committed template.**
   Run: `rm -rf /tmp/scaffold && mkdir /tmp/scaffold && cd /tmp/scaffold && lgx new my-app -t file:///home/agent/Projects/lgx-template-desktop`
   Expected: `Created my-app`, with next step `lgx run`. If `lgx new` rejects `file://`, push nothing. Instead `git clone` the repo to `/tmp/tpl-src`, run the scaffold from that URL form, and note it.
 
-- [ ] **Step 2: Check the substitution.**
+- [x] **Step 2: Check the substitution.**
   Run: `cd /tmp/scaffold/my-app && grep -rn projectname . --exclude-dir=node_modules; ls src test`
   Expected: no `projectname` left; `src/my_app/` and `test/my_app/`; namespaces `my-app.*`; `docs/plans/` present (it is removed in Step 6, which is why).
 
-- [ ] **Step 3: Check and build the scaffold exactly as CI does.**
+- [x] **Step 3: Check and build the scaffold exactly as CI does.**
   Run: `CGO_ENABLED=0 GOFLAGS=-tags=server bash -c 'mise trust && lgx fe-deps && lgx check && lgx build && ls -l bin/my-app'`
   Expected: all pass.
 
-- [ ] **Step 4: Drive the running app in server mode.**
+- [x] **Step 4: Drive the running app in server mode.**
   1. Start `CGO_ENABLED=0 GOFLAGS=-tags=server WAILS_SERVER_PORT=8766 DB_PATH=/tmp/scaffold/test.db lgx run` in the background (the `run` override builds the frontend first).
   2. Wait for `curl -fs http://localhost:8766/` and for `.nrepl-port`.
   3. Call the bridge with the request shape from Quel's `scripts/server-mode.sh` (`call`): `add-greeting ["  Ada "]` returns `"name":"Ada"`; `list-greetings []` lists it; `add-greeting [" "]` answers with the "needs a name" message; `clear-greetings []` returns `1`.
@@ -542,11 +542,11 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 
   Expected: every check passes.
 
-- [ ] **Step 5: Run the built binary on its own.**
+- [x] **Step 5: Run the built binary on its own.**
   Run: `cd /tmp && DB_PATH=/tmp/scaffold/bin.db WAILS_SERVER_PORT=8767 /tmp/scaffold/my-app/bin/my-app &`, then `curl -fs http://localhost:8767/ | grep -q '<div id="root">'` and an `add-greeting` bridge call.
   Expected: the embedded frontend is served from an unrelated directory, the call works, and no `.nrepl-port` is written. Stop it.
 
-- [ ] **Step 6: Record the results and remove the plan from the template.** Every file in this repo is copied into new projects, so `docs/` must not ship. Add a short "Verification" note to the final report covering:
+- [x] **Step 6: Record the results and remove the plan from the template.** Every file in this repo is copied into new projects, so `docs/` must not ship. Add a short "Verification" note to the final report covering:
   - what passed (Tasks 0, 6, 8, 10);
   - the merged lgx PR URL;
   - what is pending on a Mac: `lgx dev` window and HMR, Ctrl+C cleanup if Task 6 couldn't drive it, menu clear, `lgx build` + run, `lgx package-macos` + `open dist/my-app.app`;
@@ -555,6 +555,48 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
   Then run: `git rm -r docs && git commit -m "Remove the implementation plan from the template"`. The plan stays in git history.
   Expected: `git ls-files | grep -c '^docs/'` prints `0`.
 
-- [ ] **Step 7: Scaffold the final template once more.**
+- [x] **Step 7: Scaffold the final template once more.**
   Run: `rm -rf /tmp/scaffold2 && mkdir /tmp/scaffold2 && cd /tmp/scaffold2 && lgx new my-app -t file:///home/agent/Projects/lgx-template-desktop && test ! -e my-app/docs && echo clean`
   Expected: `clean`.
+
+---
+
+## Completion summary
+
+**Status: completed** (everything that can run on Linux; the macOS-only checks are pending, listed below).
+
+**Implemented**
+- lgx 0.5.3: `:sh` and `:run` task steps stream live and read stdin (PR https://github.com/abogoyavlensky/lgx/pull/71, release https://github.com/abogoyavlensky/lgx/releases/tag/v0.5.3).
+- The template on branch `desktop-template`: config and tooling, sqlite + ragtime + HoneySQL greetings, three var-registered handlers, Wails shell/window/menu, the nREPL dev loop, integrant system, the Vite + React + Tailwind frontend, `scripts/dev.sh`, `scripts/package-macos.sh` with the plist template and icon, Linux server-mode CI, and the README.
+
+**Verified on Linux**
+- lgx: `make test` (577 e2e assertions, new scenarios 181-183), release workflow green, tap updated, 0.5.3 installed.
+- Template, from a scaffold made with `lgx new my-app -t file://...` (also `ab` and `a-rather-long-application-name` for fmt and lint): no `projectname` left; `lgx fe-deps && lgx check && lgx build` pass in server mode (18 tests, 38 assertions; native binary with the namespaces lowered to Go).
+- `lgx run` in server mode: page served; `add-greeting` trims, a blank name is rejected with "A greeting needs a name.", `clear-greetings` returns 1; an nREPL `alter-var-root` of `my-app.api/list-greetings` takes effect on the next call; a SIGTERM to the app ends `lgx run` with exit 0, removes `.nrepl-port` and leaves no `lg` process.
+- The built `bin/my-app`, run from `/tmp`: embedded page and asset served, bridge call works, no `.nrepl-port` written.
+- `lgx dev` in server mode: Vite output streams live, the page is served through Vite, killing the app stops Vite, and SIGINT to the process group leaves nothing running.
+- Each task's commit got a codex review. Findings fixed: `dev.sh` removing another instance's `.nrepl-port` (Task 6), XML escaping in `package-macos.sh` (Task 7). The others had none.
+
+**Pending on a Mac (not run, not claimed as passed)**
+- `lgx dev` opens a window and HMR works; Ctrl+C in a terminal cleans up.
+- File > Clear Greetings (`Cmd+Shift+Backspace`) clears the list.
+- `lgx build && ./bin/<name>` and `lgx package-macos && open dist/<name>.app`.
+- The GitHub Actions workflow has not run yet: the template has no remote.
+
+**Deviations (all in one place)**
+1. Work is on branch `desktop-template`, not `master` (executing-plans creates a branch). The template must be merged to `master` before the `https://` URL in the README works.
+2. The entry script is `app.lg` at the repo root, not `src/projectname/app.lg`: `lgx new` hyphenates the name in file contents but underscores it in paths, so `:main` pointed at nothing in a scaffold. `.cljfmt.edn`, the `lint` task and the kondo config include it.
+3. `system.lg`'s shell maps start on their own line, because aligned values changed width with the project name and failed `lgx fmt check` in a scaffold.
+4. `.clj-kondo/config.edn` goes beyond the web template's: `:syntax` off, `e`/`_`, `write!` and `*compiling-aot*` excluded, and `:config-in-ns` exceptions for catch-only usage and the root entry namespace.
+5. `scripts/dev.sh` removes `.nrepl-port` on exit, only when this session started the app (Ctrl+C stops the app without its shutdown hook).
+6. `scripts/package-macos.sh` XML-escapes and sed-escapes the values it renders into `Info.plist`.
+7. lgx e2e scenarios are 181-183, not "after Scenario 15"; the streaming check polls against a 5 s child; a `:run` exit-code scenario replaced the duplicate `:sh` one.
+8. No codex review for Task 0 (already merged and released through lgx's CI); Task 3's tests and code were written together, so no red run.
+9. PR #71 was watched through T3's PR watch instead of `gh pr checks --watch`.
+10. `go = "1.27"` is as the plan says; the web template pins 1.27.1.
+
+**Found, not fixed (upstream, not the template)**
+- Ctrl+C on `lgx run` stops `lg` without Wails' shutdown hook, so the nREPL leaves a stale `.nrepl-port` (the next run overwrites it). `lgx dev` hides this with the cleanup above.
+- Without GTK headers, any `lgx` command that needs the runtime (even `lgx package-macos` on Linux) fails in the cgo build before the script runs; server mode avoids it.
+
+**What the plan could have specified better:** it assumed `lgx new`'s renaming was harmless to a layout-sensitive file and to a path in `lgx.edn`. Scaffolding with a hyphenated name, and with names of different lengths, would have caught both before Task 4. Also: "Task 4 `lgx lint` with no warnings" needs the kondo catch-body exceptions spelled out.
