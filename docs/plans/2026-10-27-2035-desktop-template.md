@@ -422,20 +422,24 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 
 ### Task 7: macOS packaging
 
+> Result: `bash -n` and `shellcheck` pass on both scripts; the plist renders with no placeholders left and `plistlib` accepts it. `package-macos` was **not run end to end: it needs a Mac**.
+> Note: on this Linux box, plain `lgx package-macos` fails earlier than the script: lgx first builds the cgo runtime, which needs GTK headers. With `CGO_ENABLED=0 GOFLAGS=-tags=server` it stops at once with "needs an Apple Silicon Mac" and `exit=1`.
+> Deviation: the script escapes `/` and `&` in the values it substitutes into the plist (`sed_escape`), so an app name like "A/B" doesn't break the `sed`.
+
 **Files:**
 - Create: `build/macos/Info.plist`, `build/macos/icon.png`, `scripts/package-macos.sh`
 
-- [ ] **Step 1: `Info.plist`.** Quel's `build/macos/Info.plist` with placeholders:
+- [x] **Step 1: `Info.plist`.** Quel's `build/macos/Info.plist` with placeholders:
   - `CFBundleIdentifier` → `@BUNDLE_ID@`;
   - `CFBundleName` and `CFBundleDisplayName` → `@APP_NAME@`;
   - `CFBundleExecutable` and `CFBundleIconFile` → `@EXECUTABLE@`;
   - versions → `@VERSION@`, `LSMinimumSystemVersion` → `@MACOS_MIN@`;
   - drop `LSApplicationCategoryType`.
 
-- [ ] **Step 2: Placeholder icon.** Generate a 1024×1024 RGBA PNG with a throwaway Go program in `/tmp` (stdlib `image`, `image/png`): a rounded square with a neutral two-tone gradient and a simple centred mark, transparent outside the rounded square, roughly following macOS icon-grid margins. Write it to `build/macos/icon.png`, and don't commit the generator.
+- [x] **Step 2: Placeholder icon.** Generate a 1024×1024 RGBA PNG with a throwaway Go program in `/tmp` (stdlib `image`, `image/png`): a rounded square with a neutral two-tone gradient and a simple centred mark, transparent outside the rounded square, roughly following macOS icon-grid margins. Write it to `build/macos/icon.png`, and don't commit the generator.
   Verify: `file build/macos/icon.png` → `PNG image data, 1024 x 1024, 8-bit/color RGBA`.
 
-- [ ] **Step 3: `scripts/package-macos.sh`.** Merge Quel's `scripts/package-macos.sh` and the parts of `macos-common.sh` it uses into one script:
+- [x] **Step 3: `scripts/package-macos.sh`.** Merge Quel's `scripts/package-macos.sh` and the parts of `macos-common.sh` it uses into one script:
   - At the top, an edit-me block: `APP_NAME="projectname"` (comment: the display name, e.g. "My App"), `BUNDLE_ID="com.example.projectname"` (comment: change to your reverse-DNS ID before you sign), `EXECUTABLE="projectname"`, `MACOS_MIN="15.0"`.
   - Then `die`, `read_version` (trims `VERSION`, requires MAJOR.MINOR.PATCH) and `require_apple_silicon`.
   - The body is Quel's: the cgo and server-tag guards, the deployment-target exports, `lgx build` teed to `dist/build.log` with the "built for newer" check, `sips`/`iconutil` into `dist/projectname.icns`, then a fresh `dist/$APP_NAME.app`, with the plist rendered by `sed` replacing all five placeholders and checked with `plutil -lint`.
@@ -444,14 +448,14 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 
   Make it executable.
 
-- [ ] **Step 4: Check what Linux can check.**
+- [x] **Step 4: Check what Linux can check.**
   1. `bash -n scripts/package-macos.sh && bash -n scripts/dev.sh` (one file per call: extra names are arguments, not checked), and `shellcheck` on both if it is installed.
   2. `lgx package-macos; echo "exit=$?"` stops at once with "needs an Apple Silicon Mac" and `exit=1`.
   3. The plist `sed` line, run by hand on `build/macos/Info.plist` with sample values: no `@` placeholders are left, and `python3 -c "import plistlib,sys; plistlib.loads(sys.stdin.buffer.read())"` accepts the output.
 
   Expected: all three. Record "package-macos not run end to end: needs a Mac" for the final report.
 
-- [ ] **Step 5: Commit.** `git add -A && git commit -m "lgx package-macos: an unsigned .app around the native build"`
+- [x] **Step 5: Commit.** `git add -A && git commit -m "lgx package-macos: an unsigned .app around the native build"`
 
 ### Task 8: CI
 
