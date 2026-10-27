@@ -38,18 +38,21 @@
   {:projectname.db/conn {:path (db-path)}
    :projectname.api/handlers {:db (ig/ref :projectname.db/conn)}
    ;; :name and the window :title are the display name; change them to your
-   ;; app's (e.g. "My App").
-   :projectname.shell/app {:name "projectname"
-                           :description "A let-go desktop app"
-                           :assets "public"
-                           :quit-on-last-window-closed true
-                           :on-shutdown (fn [] (stop!))}
-   :projectname.shell/window {:app (ig/ref :projectname.shell/app)
-                              :title "projectname"
-                              :width 900
-                              :height 640
-                              :min-width 480
-                              :min-height 400}
+   ;; app's (e.g. "My App"). The maps start on their own line so that
+   ;; renaming the project cannot change how cljfmt indents them.
+   :projectname.shell/app
+   {:name "projectname"
+    :description "A let-go desktop app"
+    :assets "public"
+    :quit-on-last-window-closed true
+    :on-shutdown (fn [] (stop!))}
+   :projectname.shell/window
+   {:app (ig/ref :projectname.shell/app)
+    :title "projectname"
+    :width 900
+    :height 640
+    :min-width 480
+    :min-height 400}
    :projectname.menu/menu {:app (ig/ref :projectname.shell/app)}
    :projectname.dev/loop {:window (ig/ref :projectname.shell/window)}})
 
