@@ -516,6 +516,8 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 
 ### Task 10: Verify a fresh scaffold end to end, then remove the plan
 
+> Deviation (found in Task 10): the entry script is `app.lg` at the repo root (namespace still `projectname.app`), not `src/projectname/app.lg`. `lgx new` writes the name hyphenated in file contents but underscored in paths, so `:main "src/projectname/app.lg"` became `src/my-app/app.lg` in a scaffold and pointed at nothing. `.cljfmt.edn` `:paths`, the `lint` task and the kondo config now include `app.lg`. The same scaffold run also found that `system.lg`'s aligned map values changed width with the name and failed `lgx fmt check`; the shell maps now start on their own line.
+
 **Files:**
 - Modify: this plan (record results), then delete `docs/`
 

@@ -106,11 +106,12 @@ projectname/
 ├── lgx.edn                      project config: paths, :main, the let-go pin, the native
 │                                :bin target, deps (wails, nrepl, sqlite, ragtime,
 │                                honeysql, integrant), tasks
+├── app.lg                       entry point (ns projectname.app): start the system, run
+│                                the Wails loop, stop
 ├── .mise.toml                   go, node, lgx, cljfmt, clj-kondo pins (no lg: lgx builds it)
 ├── VERSION                      the app's version, read by scripts/package-macos.sh
 │
 ├── src/projectname/             the app, one integrant component per file
-│   ├── app.lg                   entry point: start the system, run the Wails loop, stop
 │   ├── system.lg                config map + start!/stop!, the running system in system*
 │   ├── shell.lg                 ::app and ::window, the Wails application and its window
 │   ├── db.lg                    ::conn sqlite open + migrate on init, HoneySQL queries
@@ -150,7 +151,7 @@ reverse. `projectname.system/system*` holds the running system.
 | `:projectname.menu/menu` | the application menu | the app |
 | `:projectname.dev/loop` | the nREPL and the asset watcher, under `lgx run` only | the window |
 
-`projectname.app/-main` starts the system, then blocks in `w/run!`, which must
+`projectname.app/-main` (in `app.lg`) starts the system, then blocks in `w/run!`, which must
 run on the main thread. It halts the system when `w/run!` returns.
 
 A click on Add travels like this:
@@ -214,9 +215,10 @@ cut down from: its `docs/RELEASE.md`, `.github/workflows/release.yml` and
 
 - Register handlers and menu clicks by var (`#'f`, `(partial #'f env)`), so
   redefining them from the nREPL takes effect without a restart.
-- `projectname.app` is the entry script and ends in
+- `app.lg` (namespace `projectname.app`) is the entry script and ends in
   `(when-not *compiling-aot* (-main))`. Nothing may require it. Components live
-  in other namespaces.
+  in `src/`. It sits at the root because `:main` in `lgx.edn` is a path, and
+  `lgx new` can't write the underscored `src/my_app/` there.
 - No `with-redefs` or `alter-var-root` in application code, and no runtime data
   loaded from `resources/`. Both keep the native build possible.
 - `os/getenv` returns `""` for an unset variable, and `""` is truthy. Check with

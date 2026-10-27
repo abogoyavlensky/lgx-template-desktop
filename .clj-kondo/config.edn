@@ -21,7 +21,9 @@
 
  ;; Things used only inside a catch body, which kondo skips.
  :config-in-ns
- {projectname.app {:linters {:unused-namespace {:exclude [string]}
+ {;; app.lg sits at the root, so its namespace does not match its path.
+  projectname.app {:linters {:namespace-name-mismatch {:level :off}
+                             :unused-namespace {:exclude [string]}
                              :unused-private-var {:level :off}}}
   projectname.menu {:linters {:unused-binding {:level :off}}}
   projectname.system-test {:linters {:unused-binding {:level :off}}}}}

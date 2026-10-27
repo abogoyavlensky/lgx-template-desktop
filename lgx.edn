@@ -3,9 +3,12 @@
  ;; fe-build). `lgx run` serves it from disk (edits show on reload); `lgx
  ;; build` embeds it in the binary.
  :resource-paths ["resources"]
- ;; The entry namespace is projectname.app, not main: `lg compile` (the native
+ ;; The entry script is a file at the root, not under src/: lgx new writes
+ ;; the project name hyphenated in file contents but underscored in paths
+ ;; (src/my_app/), so a path to a file in src/<name>/ could not be written here.
+ ;; Its namespace is projectname.app, not main: `lg compile` (the native
  ;; build) rejects a namespace whose last segment is main.
- :main "src/projectname/app.lg"
+ :main "app.lg"
 
  ;; Wails and the sqlite driver are Go packages, so the app runs on an lg that
  ;; lgx builds with the Go toolchain.
@@ -95,7 +98,7 @@
        :do [{:sh "cljfmt {{action}}"}]}
 
   lint {:doc "Lint the backend (clj-kondo) and the frontend (oxlint)"
-        :do [{:sh "find src test -type f -name '*.lg' -print0 | xargs -0 clj-kondo --lint"}
+        :do [{:sh "find app.lg src test -type f -name '*.lg' -print0 | xargs -0 clj-kondo --lint"}
              {:task fe-deps}
              {:sh "npm --prefix frontend run lint"}]}
 
