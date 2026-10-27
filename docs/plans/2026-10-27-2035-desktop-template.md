@@ -486,7 +486,7 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 **Files:**
 - Create: `README.md`
 
-- [ ] **Step 1: Write the README** in the web template's voice and order. Use /writing-clearly. Sections:
+- [x] **Step 1: Write the README** in the web template's voice and order. Use /writing-clearly. Sections:
   1. **Title and one-paragraph pitch**: a let-go desktop app on Wails v3, React frontend, sqlite; the bullet list of libraries (wails, nrepl, sqlite, ragtime, HoneySQL, integrant, Vite/React/Tailwind).
   2. **Quickstart**: `lgx new myapp -t https://github.com/abogoyavlensky/lgx-template-desktop`, `cd myapp`, `mise trust && mise install`, `lgx run`. Note that the first run builds a custom `lg` (Wails, sqlite, let-go pinned to a commit) and takes a few minutes.
   3. **Prerequisites**: Quel's platform table (macOS: Xcode CLT; Linux: `libgtk-4-dev libwebkitgtk-6.0-dev` + C compiler, with the window itself not yet verified on Linux; Windows not supported).
@@ -510,9 +510,9 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
       - `os/getenv` returns `""`, so check with `str/blank?`;
       - React effects with braced bodies.
 
-- [ ] **Step 2: Check every command and path in the README** against the files that exist (`lgx help` lists the tasks).
+- [x] **Step 2: Check every command and path in the README** against the files that exist (`lgx help` lists the tasks).
 
-- [ ] **Step 3: Commit.** `git add -A && git commit -m "README"`
+- [x] **Step 3: Commit.** `git add -A && git commit -m "README"`
 
 ### Task 10: Verify a fresh scaffold end to end, then remove the plan
 
