@@ -100,6 +100,9 @@ database and menu.
 
 ## Layout
 
+`<app_name>` is the project name with hyphens turned into underscores: a
+project called `my-app` keeps its code in `src/my_app/`.
+
 ```
 projectname/
 │
@@ -111,7 +114,7 @@ projectname/
 ├── .mise.toml                   go, node, lgx, cljfmt, clj-kondo pins (no lg: lgx builds it)
 ├── VERSION                      the app's version, read by scripts/package-macos.sh
 │
-├── src/projectname/             the app, one integrant component per file
+├── src/<app_name>/              the app, one integrant component per file
 │   ├── system.lg                config map + start!/stop!, the running system in system*
 │   ├── shell.lg                 ::app and ::window, the Wails application and its window
 │   ├── db.lg                    ::conn sqlite open + migrate on init, HoneySQL queries
@@ -120,7 +123,7 @@ projectname/
 │   ├── menu.lg                  the application menu as data, and install!
 │   └── dev.lg                   ::loop nREPL + asset watcher, under lgx run only
 │
-├── test/projectname/            db, api, menu, system and dev tests
+├── test/<app_name>/             db, api, menu, system and dev tests
 │
 ├── frontend/                    Vite + React + TypeScript + Tailwind, built into resources/public
 │   ├── src/App.tsx              the greetings page
@@ -182,7 +185,7 @@ Make the names yours before you share the app:
 - `scripts/package-macos.sh` has `APP_NAME` (the name in the Dock, e.g. "My App"),
   `BUNDLE_ID` (change `com.example.projectname` to your reverse-DNS ID),
   `EXECUTABLE` and `MACOS_MIN` at the top.
-- `src/projectname/system.lg` has the app name and the window title.
+- `system.lg` in `src/<app_name>/` has the app name and the window title.
 - `build/macos/icon.png` is a placeholder. Replace it with a 1024×1024 PNG.
 
 `lgx.edn` pins let-go to a commit, because the native build needs
