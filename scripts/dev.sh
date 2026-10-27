@@ -14,7 +14,9 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 LGX="${LGX:-lgx}"
-VITE_URL="http://localhost:5173"
+# 127.0.0.1, not localhost: Wails dials IPv4, and curl would also succeed
+# against a Vite that listens on ::1 only (vite.config.ts pins the host).
+VITE_URL="http://127.0.0.1:5173"
 cd "$HERE"
 
 [[ -d frontend/node_modules ]] || "$LGX" fe-deps
