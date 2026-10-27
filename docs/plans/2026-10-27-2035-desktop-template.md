@@ -459,25 +459,27 @@ Work in `/home/agent/Projects/lgx`. The design section "lgx: stream task steps" 
 
 ### Task 8: CI
 
+> Result: `actionlint` passes; the CI commands (`lgx fe-deps && lgx check && lgx build`, server mode) pass locally from a clean `bin/` and `resources/public/`, and `bin/projectname` is built with the project namespaces lowered to Go. The workflow itself has not run on GitHub (the template has no remote yet).
+
 **Files:**
 - Create: `.github/workflows/checks.yml`
 
-- [ ] **Step 1: Write `checks.yml`.**
+- [x] **Step 1: Write `checks.yml`.**
   - Triggers: `push` to `master`, `pull_request`.
   - `concurrency` cancels superseded runs. `permissions: contents: read`.
   - One `ubuntu-latest` job with `env: CGO_ENABLED: "0"`, `GOFLAGS: -tags=server` and Quel's comment on why both are needed.
   - Steps: `actions/checkout@v7`, `jdx/mise-action@v5`, and `actions/cache@v6` over `~/.cache/go-build`, `~/go/pkg/mod`, `~/.lgx/runtimes` and `~/.npm`, keyed on `.mise.toml`, `lgx.edn` and `frontend/package-lock.json` (Quel's `ci.yml`).
   - Then `lgx fe-deps`, `lgx check`, and `lgx build` with the comment "proves the native build compiles".
 
-- [ ] **Step 2: Validate the YAML.**
+- [x] **Step 2: Validate the YAML.**
   Run: `python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/checks.yml'))" 2>/dev/null || ruby -ryaml -e "YAML.load_file('.github/workflows/checks.yml')"`
   Expected: no error. (Use `actionlint` if it is installed.)
 
-- [ ] **Step 3: Run the CI commands locally, exactly as CI does.**
+- [x] **Step 3: Run the CI commands locally, exactly as CI does.**
   Run: `CGO_ENABLED=0 GOFLAGS=-tags=server bash -c 'lgx fe-deps && lgx check && lgx build && ls -l bin/projectname'`
   Expected: all pass, and `bin/projectname` exists. lgx reports the project namespaces lowered to Go.
 
-- [ ] **Step 4: Commit.** `git add -A && git commit -m "CI: checks and the native build in Wails' server mode"`
+- [x] **Step 4: Commit.** `git add -A && git commit -m "CI: checks and the native build in Wails' server mode"`
 
 ### Task 9: README
 
