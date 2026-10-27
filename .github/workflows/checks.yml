@@ -1,0 +1,51 @@
+name: checks
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      # The runner has no GTK4/WebKitGTK, so the app runs in Wails' cgo-free
+      # server mode: an HTTP server instead of a window. Both vars are needed
+      # - a few Wails packages gate on `linux && cgo` without a `!server`
+      # guard.
+      CGO_ENABLED: "0"
+      GOFLAGS: -tags=server
+    steps:
+      - uses: actions/checkout@v7
+
+      # go, node and lgx, at the versions in .mise.toml.
+      - uses: jdx/mise-action@v5
+
+      # The custom lg runtime (Wails, sqlite) is cached by its inputs, so a
+      # run with an unchanged lgx.edn reuses it.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+            ~/.lgx/runtimes
+            ~/.npm
+          key: deps-${{ runner.os }}-${{ runner.arch }}-server-${{ hashFiles('.mise.toml', 'lgx.edn', 'frontend/package-lock.json') }}
+          restore-keys: deps-${{ runner.os }}-${{ runner.arch }}-server-
+
+      - name: Install frontend packages
+        run: lgx fe-deps
+
+      - name: Run all checks
+        run: lgx check
+
+      # Proves the native build compiles.
+      - name: Build
+        run: lgx build

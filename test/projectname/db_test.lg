@@ -1,0 +1,54 @@
+(ns projectname.db-test
+  (:require [clojure.test :refer [deftest is]]
+            [projectname.db :as db]
+            [projectname.migrations :as migrations]
+            [sqlite.core :as sqlite]))
+
+;; The queries against a throwaway, migrated sqlite file.
+
+(defn with-conn
+  "Call `f` with a connection to a fresh, migrated sqlite file in /tmp and
+   delete the file afterwards."
+  [f]
+  (let [path (str "/tmp/projectname-test-" (rand-int 100000000) ".db")
+        conn (sqlite/open path)]
+    (try
+      (migrations/migrate! conn)
+      (f conn)
+      (finally
+        (sqlite/close! conn)
+        (os/sh "rm" "-f" path)))))
+
+(deftest add-then-list
+  (with-conn
+    (fn [conn]
+      (let [g (db/add-greeting! conn "Ada")]
+        (is (= "Ada" (:name g)))
+        (is (integer? (:id g)))
+        (is (= [g] (db/list-greetings conn)))))))
+
+(deftest list-is-newest-first-and-capped-at-ten
+  (with-conn
+    (fn [conn]
+      (doseq [n (range 12)]
+        (db/add-greeting! conn (str "g" n)))
+      (let [names (mapv :name (db/list-greetings conn))]
+        (is (= 10 (count names)))
+        (is (= "g11" (first names)))
+        (is (= "g2" (last names)))))))
+
+(deftest clear-deletes-everything-and-counts
+  (with-conn
+    (fn [conn]
+      (db/add-greeting! conn "a")
+      (db/add-greeting! conn "b")
+      (is (= 2 (db/clear-greetings! conn)))
+      (is (= [] (db/list-greetings conn)))
+      (is (= 0 (db/clear-greetings! conn))))))
+
+(deftest rollback-then-migrate
+  (with-conn
+    (fn [conn]
+      (migrations/rollback! conn)
+      (migrations/migrate! conn)
+      (is (= "Ada" (:name (db/add-greeting! conn "Ada")))))))

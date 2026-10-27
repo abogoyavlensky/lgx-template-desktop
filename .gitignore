@@ -1,0 +1,17 @@
+bin/
+dist/
+resources/public/
+frontend/node_modules/
+*.db
+*.lgb
+.nrepl-port
+.nrepl-history
+.tmp/
+.DS_Store
+.idea/
+.lsp/
+lsp/
+.vscode
+.calva
+.clj-kondo/.cache/
+.env

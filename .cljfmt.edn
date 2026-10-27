@@ -1,0 +1,6 @@
+{:paths ["app.lg" "src" "test"]
+ :file-pattern #re "\\.lg?$"
+ :parallel? true
+ :remove-multiple-non-indenting-spaces? true
+ :split-keypairs-over-multiple-lines? true
+ :function-arguments-indentation :cursive}

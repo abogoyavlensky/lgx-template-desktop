@@ -1,0 +1,37 @@
+(ns projectname.api-test
+  (:require [clojure.test :refer [deftest is]]
+            [projectname.api :as api]
+            [projectname.db-test :refer [with-conn]]
+            [string :as str]))
+
+;; The handlers as plain fns over a throwaway db: what the frontend calls,
+;; minus the bridge (wails' own tests cover that).
+
+(defn- message-of [f]
+  (try (f) nil (catch e (ex-message e))))
+
+(deftest add-greeting-trims-the-name
+  (with-conn
+    (fn [c]
+      (is (= "Ada" (:name (api/add-greeting c "  Ada "))))
+      (is (= ["Ada"] (mapv :name (api/list-greetings c)))))))
+
+(deftest add-greeting-rejects-a-blank-name
+  (with-conn
+    (fn [c]
+      (is (str/includes? (message-of #(api/add-greeting c "   ")) "name"))
+      (is (str/includes? (message-of #(api/add-greeting c nil)) "name"))
+      (is (= [] (api/list-greetings c))))))
+
+(deftest clear-greetings-returns-the-count
+  (with-conn
+    (fn [c]
+      (api/add-greeting c "a")
+      (api/add-greeting c "b")
+      (is (= 2 (api/clear-greetings c)))
+      (is (= [] (api/list-greetings c))))))
+
+(deftest handlers-are-vars-under-the-frontend-names
+  (is (= #{"list-greetings" "add-greeting" "clear-greetings"}
+         (set (keys api/handlers))))
+  (is (every? var? (vals api/handlers))))

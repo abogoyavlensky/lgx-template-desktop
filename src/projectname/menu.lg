@@ -1,0 +1,50 @@
+(ns projectname.menu
+  (:require [integrant.core :as ig]
+            [wails.core :as w]))
+
+;; The application menu, as data. The menu component's value, {:app ...},
+;; is what the click handlers and `spec` take. Every :on-click goes through
+;; a var, so a redefinition takes effect on the next click; after editing
+;; `spec`, rebuild the menu bar in place:
+;;
+;;   (projectname.menu/install! (:projectname.menu/menu @projectname.system/system*))
+;;
+;; The items emit events; the frontend does the work.
+
+(defn- reporting
+  "Run f; show an error dialog instead of letting a failure vanish into
+   stderr, which is where an unawaited menu click's exception goes."
+  [app what f]
+  (try
+    (f)
+    (catch e
+           (w/message! app :error (str what " failed") (ex-message e)))))
+
+(defn- emitter
+  "A click handler that emits `event` to the frontend, which does the work."
+  [what event]
+  (fn [{:keys [app]}]
+    (reporting app what (fn [] (w/emit! app event {})))))
+
+(def clear-greetings! (emitter "Clear Greetings" "menu:clear-greetings"))
+
+(defn spec [env]
+  [{:role :app-menu}
+   {:label "File"
+    :items [{:label "Clear Greetings"
+             :accelerator "CmdOrCtrl+Shift+Backspace"
+             :on-click (partial #'clear-greetings! env)}
+            {:separator true}
+            {:role :quit}]}
+   {:role :edit-menu}
+   {:role :window-menu}])
+
+(defn install!
+  "Install (or rebuild) the application menu. Returns env."
+  [{:keys [app]
+    :as env}]
+  (w/set-menu! app (spec env))
+  env)
+
+(defmethod ig/init-key ::menu [_ env]
+  (install! env))

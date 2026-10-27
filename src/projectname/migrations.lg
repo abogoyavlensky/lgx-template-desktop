@@ -1,0 +1,41 @@
+(ns projectname.migrations
+  (:require [honey.sql :as sql]
+            [ragtime.letgo :as rt]))
+
+;; Schema migrations with ragtime: the letgo-ragtime package supplies the
+;; DataStore (a ragtime_migrations table over the sql layer) and the
+;; Migration record; this namespace holds only the app's history. Each
+;; migration's up and down steps are HoneySQL DDL maps, so the whole schema
+;; is readable as one vector. Append a new entry to add a migration.
+
+(defn- migration [id up down]
+  (rt/sql-migration {:id id
+                     :up (mapv sql/format up)
+                     :down (mapv sql/format down)}))
+
+(def migrations
+  [(migration "001-create-greetings"
+              [{:create-table :greetings
+                :with-columns [[:id :integer [:primary-key]]
+                               [:name :text [:not nil]]]}]
+              [{:drop-table :greetings}])])
+
+(defn store
+  "The ragtime DataStore over `conn`."
+  [conn]
+  (rt/sql-database conn))
+
+(defn- config [conn]
+  {:datastore (store conn)
+   :migrations migrations})
+
+(defn migrate!
+  "Apply every migration not yet applied, in order."
+  [conn]
+  (rt/migrate (config conn)))
+
+(defn rollback!
+  "Roll back the last migration, or the last `n`."
+  ([conn] (rollback! conn 1))
+  ([conn n]
+   (rt/rollback (config conn) n)))
