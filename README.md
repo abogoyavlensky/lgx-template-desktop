@@ -67,7 +67,9 @@ the nREPL (below). Closing the window, or pressing Ctrl+C, stops both.
 when `frontend/node_modules` is missing. After `frontend/package-lock.json`
 changes, resync with `npm --prefix frontend ci`.
 
-`DB_PATH` overrides where the database lives. By default it is
+`DB_PATH` overrides where the database lives. Under `lgx run` and `lgx dev`
+it defaults to `projectname.db` in the project directory (gitignored), so
+development never touches the installed app's data. A built binary uses
 `projectname.db` in the app's data directory (`~/Library/Application Support/projectname`
 on macOS, `~/.config/projectname` on Linux).
 

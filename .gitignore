@@ -3,6 +3,9 @@ dist/
 resources/public/
 frontend/node_modules/
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
 *.lgb
 .nrepl-port
 .nrepl-history

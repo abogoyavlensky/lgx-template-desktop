@@ -2,22 +2,21 @@
   (:require [clojure.test :refer [deftest is]]
             [integrant.core :as ig]
             [projectname.db :as db]
-            [projectname.system :as system]))
+            [projectname.system :as system]
+            [projectname.test-db :as test-db]))
 
 ;; The wiring, without a window: integrant starts only the keys asked for
 ;; and what they depend on, so the database and the handlers come up on
-;; their own. DB_PATH points the config at a throwaway file, so the tests
-;; never touch the real database or its directory.
+;; their own. DB_PATH points the config at the shared test database, emptied
+;; first, so the tests never touch the real database or its directory.
 
 (defn- with-config [f]
-  (let [path (str "/tmp/projectname-test-" (rand-int 100000000) ".db")
-        saved (os/getenv "DB_PATH")]
+  (test-db/reset-db!)
+  (let [saved (os/getenv "DB_PATH")]
     (try
-      (os/setenv "DB_PATH" path)
-      (f (system/config) path)
-      (finally
-        (os/setenv "DB_PATH" saved)
-        (os/sh "rm" "-f" path)))))
+      (os/setenv "DB_PATH" test-db/path)
+      (f (system/config) test-db/path)
+      (finally (os/setenv "DB_PATH" saved)))))
 
 (deftest the-config-names-every-component
   (with-config

@@ -1,0 +1,46 @@
+(ns projectname.test-db
+  (:require [projectname.migrations :as migrations]
+            [sqlite.core :as sqlite]))
+
+;; One sqlite file shared by every test that needs a database. It is not
+;; deleted between tests: each test empties it - drops every table, the
+;; ragtime_migrations bookkeeping included - before it runs, so a test starts
+;; from a blank file whatever the last one (or an aborted run) left behind.
+
+(def path
+  "The shared test database, in .tmp/ (gitignored, relative to the project
+   root, where lgx test runs)."
+  ".tmp/projectname-test.db")
+
+(defn- drop-all!
+  "Drop every view and table in `conn`; indexes and triggers go with their
+   tables. sqlite_* are sqlite's own internal tables."
+  [conn]
+  (doseq [{:keys [type name]}
+          (sqlite/query conn ["SELECT type, name FROM sqlite_master
+                               WHERE type IN ('view', 'table')
+                                 AND name NOT LIKE 'sqlite_%'
+                               ORDER BY type = 'table'"])]
+    (sqlite/execute! conn [(str "DROP " (if (= type "view") "VIEW" "TABLE")
+                                " IF EXISTS \"" name "\"")])))
+
+(defn reset-db!
+  "Empty the shared test database: no tables, no data, no applied
+   migrations. Creates the file (and .tmp/) when missing."
+  []
+  (os/sh "mkdir" "-p" ".tmp")
+  (let [conn (sqlite/open path)]
+    (try
+      (drop-all! conn)
+      (finally (sqlite/close! conn)))))
+
+(defn with-conn
+  "Call `f` with a connection to the shared test database, emptied and
+   migrated from scratch."
+  [f]
+  (reset-db!)
+  (let [conn (sqlite/open path)]
+    (try
+      (migrations/migrate! conn)
+      (f conn)
+      (finally (sqlite/close! conn)))))

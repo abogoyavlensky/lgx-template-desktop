@@ -2,22 +2,10 @@
   (:require [clojure.test :refer [deftest is]]
             [projectname.db :as db]
             [projectname.migrations :as migrations]
-            [sqlite.core :as sqlite]))
+            [projectname.test-db :refer [with-conn]]))
 
-;; The queries against a throwaway, migrated sqlite file.
-
-(defn with-conn
-  "Call `f` with a connection to a fresh, migrated sqlite file in /tmp and
-   delete the file afterwards."
-  [f]
-  (let [path (str "/tmp/projectname-test-" (rand-int 100000000) ".db")
-        conn (sqlite/open path)]
-    (try
-      (migrations/migrate! conn)
-      (f conn)
-      (finally
-        (sqlite/close! conn)
-        (os/sh "rm" "-f" path)))))
+;; The queries against the shared test database, emptied and migrated
+;; before each test.
 
 (deftest add-then-list
   (with-conn

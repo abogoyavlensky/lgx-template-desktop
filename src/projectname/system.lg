@@ -2,7 +2,7 @@
   (:require [integrant.core :as ig]
             [projectname.api]
             [projectname.db]
-            [projectname.dev]
+            [projectname.dev :as dev]
             [projectname.menu]
             [projectname.shell]
             [string :as str]
@@ -25,14 +25,18 @@
 (declare stop!)
 
 (defn db-path
-  "The sqlite file: DB_PATH when set, else projectname.db in the app's data
-   directory (which w/data-dir creates). os/getenv returns \"\" for an unset
-   variable, so the check is for a blank one."
+  "The sqlite file: DB_PATH when set; else projectname.db in the project
+   directory under `lgx run` / `lgx dev` (the working directory is the
+   project root there), so development never touches the installed app's
+   data; else projectname.db in the app's data directory (which w/data-dir
+   creates). os/getenv returns \"\" for an unset variable, so the check is
+   for a blank one."
   []
   (let [p (os/getenv "DB_PATH")]
-    (if (str/blank? p)
-      (str (w/data-dir "projectname") "/projectname.db")
-      p)))
+    (cond
+      (not (str/blank? p)) p
+      (dev/dev?) "projectname.db"
+      :else (str (w/data-dir "projectname") "/projectname.db"))))
 
 (defn config []
   {:projectname.db/conn {:path (db-path)}
