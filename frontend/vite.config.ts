@@ -14,12 +14,17 @@ export default defineConfig({
   },
   base: "/",
   server: {
+    // IPv4 explicitly, never "localhost": Node resolves that to ::1 on
+    // macOS, but Wails' dev proxy dials localhost over IPv4 only, so every
+    // page request failed and the window stayed blank. scripts/dev.sh
+    // points FRONTEND_DEVSERVER_URL at the same address.
+    host: "127.0.0.1",
     port: 5173,
     strictPort: true,
     // The HMR websocket goes straight to Vite. The page's own origin is
     // Wails' (wails://localhost:5173 on macOS, http://localhost:<port> in
     // server mode), and in server mode nothing there answers a websocket.
-    ws: { protocol: "ws", host: "localhost", clientPort: 5173 },
+    ws: { protocol: "ws", host: "127.0.0.1", clientPort: 5173 },
   },
   build: {
     outDir: "../resources/public",
